@@ -20,10 +20,10 @@ LOG_FILES_DIR = 'update_logs'
 DATE_FMT = '%Y-%m-%d'
 MIN_ACTIVE = 3
 
-Stats = collections.namedtuple('Stats','found_log_file, data_set, unique_data_set, active_data_set')
+Stats = collections.namedtuple('Stats','found_log_file, data_set, unique_data_set, active_data_set, num_new, num_existing, new_ips_set')
 
 # Function to return formatted stats based on a date range
-def get_stats(from_date, to_date):
+def get_stats(from_date, to_date, existing_ips=[]):
     data_set = []
     found_log_file = False
     for f in sorted(os.listdir(LOG_FILES_DIR)):
@@ -56,13 +56,15 @@ def get_stats(from_date, to_date):
 
     active_data_set = filter(lambda x: x > MIN_ACTIVE, num_times_per_ip.values())
 
-    return Stats(found_log_file=found_log_file, data_set=data_set, unique_data_set=unique_data_set, active_data_set=active_data_set)
+    # figure out how many of our users are new or existing
+    # start with the set of ips in this data set
+    ips = [v['ip'] for v in data_set]
+    ips = list(set(ips)) # wholly inefficient but quick way to get a unique set of values
+    new_ips = list(set(ips) - set(existing_ips)) # new ips
+    num_new = len(new_ips)
+    num_existing = len(ips) - len(new_ips)
 
-# Generate a row that can be pretty-printed, based on the output of get_stats
-def pretty_print_stats(stats, from_date, to_date):
-    date_fmt = "%b %d"
-    date_range = from_date.strftime(date_fmt) + " - " + to_date.strftime(date_fmt)
-    return [date_range, len(stats.data_set), len(stats.unique_data_set), len(stats.active_data_set)]
+    return Stats(found_log_file=found_log_file, data_set=data_set, unique_data_set=unique_data_set, active_data_set=active_data_set, num_new=num_new, num_existing=num_existing, new_ips_set = new_ips)
 
 # Roll a date back to the most recent Monday
 def roll_back_a_week(adate):
@@ -103,7 +105,12 @@ while True:
     stats = get_stats(from_date, to_date)
     if not stats.found_log_file:
         break
-    table_rows.append(pretty_print_stats(stats,from_date, to_date))
+
+    # pretty print dates
+    date_fmt = "%b %d"
+    date_range = from_date.strftime(date_fmt) + " - " + to_date.strftime(date_fmt)
+
+    table_rows.append([date_range, len(stats.data_set), len(stats.unique_data_set), stats.num_new, stats.num_existing])
 
     # Roll the date back
     to_date = from_date - timedelta(1)
@@ -112,16 +119,18 @@ while True:
     elif interval == 'month':
         from_date = roll_back_a_month(to_date)
 
-# Calculate stats for the last row (across all log files)
-sum_table_row = pretty_print_stats(get_stats(from_date, today), from_date, today)
-
-x = PrettyTable(["date range","hits","uniques","actives"])
+x = PrettyTable(["date range","hits","uniques","new users", "existing users"])
 # Print out the rows of the table in reverse order
 for row in table_rows[::-1]:
     x.add_row(row)
 print x
 
-y = PrettyTable(["totals (all dates)", "total hits", "total uniques", "total actives"])
-y.add_row(sum_table_row)
-print y
+# Calculate stats for the last row (across all log files)
+total_stats = get_stats(from_date, today)
+
+# pretty print dates
+date_fmt = "%b %d"
+date_range = from_date.strftime(date_fmt) + " - " + to_date.strftime(date_fmt)
+
+print "Total stats for %s:\n\t%d hits\n\t%d unique users" % (date_range, len(total_stats.data_set), len(total_stats.unique_data_set))
 
