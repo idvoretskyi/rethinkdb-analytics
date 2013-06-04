@@ -91,6 +91,12 @@ if not os.path.exists(LOG_FILES_DIR):
 if not args.cached:
     os.system("rsync -Pavzrh -e 'ssh -p 440' teapot@rethinkdb.com:/srv/www/update.rethinkdb.com/flask_logs/ %s" % LOG_FILES_DIR)
 
+# Get the list of log files we have, and sort by date
+log_dates = []
+for f in sorted(os.listdir(LOG_FILES_DIR)):
+    file_date = datetime.strptime(os.path.splitext(f)[0], DATE_FMT)
+    log_dates.append(file_date)
+
 today = datetime.today().replace(minute=0,hour=0,second=0,microsecond=0)
 to_date = today
 if interval == 'week':
