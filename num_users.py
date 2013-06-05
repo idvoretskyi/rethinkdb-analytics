@@ -35,6 +35,7 @@ def pp_dates(from_date,to_date):
 parser = argparse.ArgumentParser(description='Report usage statistics based on an interval. Accepts an interval in days, and aggregates data over this interval since the beginning of time.')
 parser.add_argument('interval', nargs=1, default='week', help='interval to analyze: week, month')
 parser.add_argument('--cached', action='store_true', help='use cached logs instead of fetching new logs via rsync.')
+parser.add_argument('--nohits', action='store_true', help='do not print the hits as part of the results.')
 args = parser.parse_args()
 
 interval = args.interval[0]
@@ -119,13 +120,19 @@ for bucket in buckets:
 
     # record a summary for this row
     daterange = pp_dates(bucket[0]['datetime'],bucket[-1]['datetime'])
-    table_rows.append([daterange, len(ips_for_bucket), len(uniques_for_bucket), len(new_for_bucket), num_existing])
+    table_rows.append([daterange, len(uniques_for_bucket), num_existing, len(new_for_bucket), len(ips_for_bucket)])
 
 # Build the table
-x = PrettyTable(["date range","hits","uniques","new users", "existing users"])
+ptable_array = ["range","uniques","existing","new"]
+if not args.nohits:
+    ptable_array.append("hits")
+x = PrettyTable(ptable_array)
 for row in table_rows:
-    x.add_row(row)
+    x.add_row(row[:-1] if args.nohits else row)
 print x
 
 daterange = pp_dates(buckets[0][0]['datetime'],buckets[-1][-1]['datetime'])
-print "Total stats for %s:\n\t%d hits\n\t%d unique users" % (daterange, len(all_ips), len(existing_ips))
+print "Total stats for %s:" % daterange
+print "\t%d uniques" % len(existing_ips)
+if not args.nohits:
+    print "\t%d hits" % len(all_ips)
