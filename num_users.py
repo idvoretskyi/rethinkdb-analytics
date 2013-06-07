@@ -6,7 +6,6 @@ from dateutil.relativedelta import relativedelta
 import argparse
 import collections
 from prettytable import PrettyTable
-from sets import Set
 
 LOG_FILES_DIR = 'update_logs'
 DATE_FMT = '%Y-%m-%d'
@@ -52,7 +51,7 @@ if not args.cached:
     os.system("rsync -Pavzrh -e 'ssh -p 440' teapot@rethinkdb.com:/srv/www/update.rethinkdb.com/flask_logs/ %s" % LOG_FILES_DIR)
 
 ips_per_date = []
-all_uniques = Set()
+all_uniques = {}
 for f in sorted(os.listdir(LOG_FILES_DIR)):
     file_date = datetime.strptime(os.path.splitext(f)[0], DATE_FMT)
 
@@ -61,7 +60,10 @@ for f in sorted(os.listdir(LOG_FILES_DIR)):
         for row in log.readlines():
             ip = row.split()[3]
             ips.append(ip)
-            all_uniques.add(ip)
+            if ip in all_uniques:
+                all_uniques[ip] += 1
+            else:
+                all_uniques[ip] = 1
 
     ips_per_date.append({
         'datetime': file_date,
@@ -73,9 +75,9 @@ first_date = ips_per_date[0]['datetime']
 
 def get_host(ip):
     try:
-        return socket.gethostbyaddr(ip)[0]
+        return (ip, socket.gethostbyaddr(ip)[0])
     except socket.herror:
-        return ""
+        return (ip, "")
 
 if interval == 'week':
     from_date = roll_back_a_week(first_date)
@@ -85,12 +87,24 @@ elif interval == 'month':
     to_date = roll_forward_a_month(from_date)
 elif interval == 'geo':
     print "Starting reverse ip lookup. This will take some time..."
+    print "Note: there may be duplicate entries for different IPs that resolve to the same host"
+    # generate count,host pairs
     from multiprocessing import Pool
-    pool = Pool(64)
+    pool = Pool(256)
     hosts = pool.map(get_host, all_uniques)
-    for host in hosts:
+    rows = []
+    for (ip, host) in hosts:
         if host != "":
-            print host
+            rows.append((all_uniques[ip], host))
+        else:
+            rows.append((all_uniques[ip], ip))
+    # sort by count
+    rows.sort()
+    # prettify it
+    x = PrettyTable(["hits", "host"])
+    for row in rows:
+        x.add_row(row)
+    print x
     sys.exit(0)
 
 i = 0
