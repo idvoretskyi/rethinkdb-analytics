@@ -1,10 +1,12 @@
 #! /usr/bin/env python
 import os, sys
+import socket
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import argparse
 import collections
 from prettytable import PrettyTable
+from sets import Set
 
 LOG_FILES_DIR = 'update_logs'
 DATE_FMT = '%Y-%m-%d'
@@ -33,14 +35,14 @@ def pp_dates(from_date,to_date):
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description='Report usage statistics based on an interval. Accepts an interval in days, and aggregates data over this interval since the beginning of time.')
-parser.add_argument('interval', nargs=1, default='week', help='interval to analyze: week, month')
+parser.add_argument('interval', nargs=1, default='week', help='interval to analyze: week, month; alternatively, specify `geo` to do reverse ip lookup')
 parser.add_argument('--cached', action='store_true', help='use cached logs instead of fetching new logs via rsync.')
 parser.add_argument('--nohits', action='store_true', help='do not print the hits as part of the results.')
 args = parser.parse_args()
 
 interval = args.interval[0]
-if interval != 'week' and interval != 'month':
-    print "%s is not a recognized interval, use: week, month" % interval
+if interval != 'week' and interval != 'month' and interval != 'geo':
+    print "%s is not a recognized interval, use: week, month; or geo" % interval
     sys.exit()
 
 # Fetch log files (and create the directory they'll live in if it doesn't exist)
@@ -50,13 +52,16 @@ if not args.cached:
     os.system("rsync -Pavzrh -e 'ssh -p 440' teapot@rethinkdb.com:/srv/www/update.rethinkdb.com/flask_logs/ %s" % LOG_FILES_DIR)
 
 ips_per_date = []
+all_uniques = Set()
 for f in sorted(os.listdir(LOG_FILES_DIR)):
     file_date = datetime.strptime(os.path.splitext(f)[0], DATE_FMT)
 
     ips = []
     with open(os.path.join(LOG_FILES_DIR,f),'r') as log:
         for row in log.readlines():
-            ips.append(row.split()[3])
+            ip = row.split()[3]
+            ips.append(ip)
+            all_uniques.add(ip)
 
     ips_per_date.append({
         'datetime': file_date,
@@ -66,13 +71,27 @@ for f in sorted(os.listdir(LOG_FILES_DIR)):
 
 first_date = ips_per_date[0]['datetime']
 
+def get_host(ip):
+    try:
+        return socket.gethostbyaddr(ip)[0]
+    except socket.herror:
+        return ""
+
 if interval == 'week':
     from_date = roll_back_a_week(first_date)
     to_date = roll_forward_a_week(from_date)
 elif interval == 'month':
     from_date = roll_back_a_month(first_date)
     to_date = roll_forward_a_month(from_date)
-
+elif interval == 'geo':
+    print "Starting reverse ip lookup. This will take some time..."
+    from multiprocessing import Pool
+    pool = Pool(64)
+    hosts = pool.map(get_host, all_uniques)
+    for host in hosts:
+        if host != "":
+            print host
+    sys.exit(0)
 
 i = 0
 buckets = []
