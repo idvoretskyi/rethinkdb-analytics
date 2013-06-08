@@ -61,9 +61,16 @@ for f in sorted(os.listdir(LOG_FILES_DIR)):
             ip = row.split()[3]
             ips.append(ip)
             if ip in all_uniques:
-                all_uniques[ip] += 1
+                ip_info = all_uniques[ip]
+                ip_info['hits'] += 1
+                ip_info['first_seen'] = ip_info['first_seen'] if ip_info['first_seen'] < file_date else file_date
+                ip_info['last_seen'] = ip_info['last_seen'] if ip_info['last_seen'] > file_date else file_date
+                all_uniques[ip] = ip_info
             else:
-                all_uniques[ip] = 1
+                ip_info = { 'hits': 1,
+                            'first_seen': file_date,
+                            'last_seen': file_date }
+                all_uniques[ip] = ip_info
 
     ips_per_date.append({
         'datetime': file_date,
@@ -90,18 +97,23 @@ elif interval == 'geo':
     print "Note: there may be duplicate entries for different IPs that resolve to the same host"
     # generate count,host pairs
     from multiprocessing import Pool
+    import pretty
     pool = Pool(256)
     hosts = pool.map(get_host, all_uniques)
     rows = []
     for (ip, host) in hosts:
         if host != "":
-            rows.append((all_uniques[ip], host))
+            hostname = host
         else:
-            rows.append((all_uniques[ip], ip))
+            hostname = ip
+        rows.append((all_uniques[ip]['hits'],
+                     hostname,
+                     pretty.date(all_uniques[ip]['first_seen']),
+                     pretty.date(all_uniques[ip]['last_seen'])))
     # sort by count
     rows.sort()
     # prettify it
-    x = PrettyTable(["hits", "host"])
+    x = PrettyTable(["hits", "host", "first seen", "last seen"])
     for row in rows:
         x.add_row(row)
     print x
