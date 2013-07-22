@@ -83,7 +83,7 @@ first_date = ips_per_date[0]['datetime']
 def get_host(ip):
     try:
         return (ip, socket.gethostbyaddr(ip)[0])
-    except socket.herror:
+    except:
         return (ip, "")
 
 if interval == 'week':
