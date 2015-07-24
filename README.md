@@ -1,7 +1,7 @@
 rethinkdb-analytics
 ===================
 
-Analytics tools of all sorts.
+![](screenshot.png)
 
 ## Setup
 
