@@ -1,0 +1,22 @@
+{
+  "name": "rethinkdb-data-dashboard",
+  "version": "0.0.1",
+  "homepage": "https://github.com/rethinkdb/rethinkdb-analytics",
+  "authors": [
+    "thejsj <jorge.silva@thejsj.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "bootstrap": "~3.3.5",
+    "Chart.js": "~1.0.2",
+    "moment": "~2.10.3",
+    "c3": "~0.4.10"
+  }
+}

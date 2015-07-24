@@ -1,0 +1,80 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>RethinkDB Data Dashboard</title>
+    <!-- Bootstrap -->
+    <link href="lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="lib/c3/c3.min.css" rel="stylesheet">
+    <!-- CSS -->
+    <link href="css/main.css" rel="stylesheet">
+  </head>
+  <body>
+     <div class="container">
+      <div class="header clearfix">
+
+        <div class='row'>
+          <div class='col-md-8'>
+            <h3 class="text-muted">RethinkDB Data Dashboard</h3>
+          </div>
+          <div class='col-md-4'>
+            <div class="dropdown">
+              <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                Views
+                <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                <li role="presentation" class="active"><a href="#">Number of Users</a></li>
+                <li role="presentation"><a href="#minor-month">Per Month (Minor)</a></li>
+                <li role="presentation"><a href="#periodic-month">Per Month (Periodic)</a></li>
+                <li role="presentation"><a href="#most-servers">Number of Servers</a></li>
+                <li role="presentation"><a href="#most-tables">Number of Tables</a></li>
+                <li role="presentation"><a href="#github-stars">GitHub Stars</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class='row'>
+        <div class='col-md-8'>
+          <h3><a id="minor-month" class="anchor">Unique IPs per month (Minor)</a></h3>
+          <div id="minor-month-graph" ></div>
+        </div>
+      </div>
+      <div class='row'>
+        <div class='col-md-8'>
+          <h3><a id="periodic-month" class="anchor">Unique IPs per month (Periodic)</a></h3>
+          <div id="periodic-month-graph" ></div>
+        </div>
+      </div>
+      <div class='row'>
+        <div class='col-md-8'>
+          <h3><a id="most-servers" class="anchor">Most Servers</a></h3>
+          <div id="most-servers-graph"></div>
+        </div>
+      </div>
+      <div class='row'>
+        <div class='col-md-8'>
+          <h3><a id="most-tables" class='anchor'>Most Tables</a></h3>
+          <div id="most-tables-graph" ></div>
+        </div>
+      </div>
+      <div class='row'>
+        <div class='col-md-8'>
+          <h3><a href="github-stars" class='anchor'>GitHub Stars</a></h3>
+          <div id="github-stars-graph" ></div>
+        </div>
+      </div>
+    </div>
+    <!-- JS -->
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="lib/moment/min/moment.min.js"></script>
+    <script src="lib/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="lib/d3/d3.min.js"></script>
+    <script src="lib/c3/c3.min.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
